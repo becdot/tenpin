@@ -1,68 +1,103 @@
 require "./scoring"
 
-describe Bowl do
-    context "a single non-clean frame" do
-        it "calculates number of pins knocked down" do
-            game = Bowl.new
-            game.add([3, 4])
-            game.score.should == 7
+describe Frame do
+    context "score for an unclean frame" do
+        it "calculates the number of pins" do
+            frame = Frame.new
+            frame.roll(3)
+            frame.roll(4)
+            frame.score.should == 7
+        end
+    end
+end
+
+
+describe TenPin do
+    context "a single roll" do
+        it "sets the first ball of the first frames" do
+            game = TenPin.new
+            game.roll(3)
+            game.frames[0].balls[0].should == 3
+        end
+    end
+    context "two rolls" do
+        it "sets both balls in the first frame" do
+            game = TenPin.new
+            game.roll(3)
+            game.roll(4)
+            game.frames[0].balls[0].should == 3
+            game.frames[0].balls[1].should == 4
 
         end
     end
-    context "a game with no strikes or spares" do
-        it "adds the number of pins knocked down across all frames" do
-            game = Bowl.new
-            bad_game = [[3, 4], [6, 2], [5, 4], [1, 2], [2, 3], [8, 1], [9, 0], [7, 2], [0, 1], [8, 0]]
-            game.add(*bad_game)
-            game.score.should == bad_game.flatten.reduce(:+)
+    context "three rolls" do
+        it "sets both balls in the first frame, and the first ball in the second frame" do
+            game = TenPin.new
+            game.roll(3)
+            game.roll(4)
+            game.roll(7)
+            game.frames[0].balls[0].should == 3
+            game.frames[0].balls[1].should == 4
+            game.frames[1].balls[0].should == 7
+
         end
     end
-    context "a spare followed by a non-spare" do
-        it "adds ten + next ball" do
-            game = Bowl.new
-            bad_spare_game = [[3, 7], [1, 2]] # [11, 3]
-            game.add(*bad_spare_game)
-            game.score.should == [11, 3].reduce(:+)
+    context "three rolls with a strike" do
+        it "sets a strike in the first frame, two balls in the second frame" do
+            game = TenPin.new
+            game.roll(10)
+            game.roll(4)
+            game.roll(3)
+            game.frames[0].balls[0].should == 10
+            game.frames[0].balls[1].should == nil
+            game.frames[1].balls[0].should == 4
+            game.frames[1].balls[1].should == 3
+
         end
     end
-    context "a spare followed by a spare" do
-        it "still adds ten + next ball" do
-            game = Bowl.new
-            two_spares = [[3, 7], [9, 1], [3, 4]] # [19, 13, 7]
-            game.add(*two_spares)
-            game.score.should == [19, 13, 7].reduce(:+)
+    context "score for a spare followed by a non-strike" do
+        it "adds 10 + first ball of the second frame" do
+            game = TenPin.new
+            [3, 7, 4, 5].each {|pins| game.roll(pins)}
+            game.frames[0].score.should == 14
+            game.frames[1].score.should == 9
         end
     end
-    context "a strike followed by a bad frame" do
-        it "adds ten + next two balls" do
-            game = Bowl.new
-            strike_meh = [[10], [3, 4]] # [17, 7]
-            game.add(*strike_meh)
-            game.score.should == [17, 7].reduce(:+)
+    context "score for a spare followed by a strike" do
+        it "equals 20" do
+            game = TenPin.new
+            [3, 7, 10].each {|pins| game.roll(pins)}
+            game.frames[0].score.should == 20
         end
     end
-    context "a strike followed by a spare" do
-        it "adds twenty" do
-            game = Bowl.new
-            strike_spare = [[10], [3, 7], [1, 1]] # [20, 11, 2]
-            game.add(*strike_spare)
-            game.score.should == [20, 11, 2].reduce(:+)
+    context "score for a strike followed by an unclean frame" do
+        it "equals 10 + next two balls" do
+            game = TenPin.new
+            [10, 3, 5].each {|pins| game.roll(pins)}
+            game.frames[0].score.should == 18
+            game.frames[1].score.should == 8
         end
     end
-    context "a strike followed by one strike and one non-strike" do
-        it "adds twenty + next ball" do
-            game = Bowl.new
-            strike_strike = [[10], [10], [1, 1]] # [21, 12, 2]
-            game.add(*strike_strike)
-            game.score.should == [21, 12, 2].reduce(:+)
+    context "score for a strike followed by a spare" do
+        it "equals 20" do
+            game = TenPin.new
+            [10, 6, 4].each {|pins| game.roll(pins)}
+            game.frames[0].score.should == 20
+
         end
     end
-    context "a strike followed by two strikes" do
-        it "adds twenty + next ball" do
-            game = Bowl.new
-            strike_strike_strike = [[10], [10], [10], [0, 0]] # [30, 20, 10, 0]
-            game.add(*strike_strike_strike)
-            game.score.should == [30, 20, 10, 0].reduce(:+)
+    context "score for a strike followed by one strike and one non-strike" do
+        it "equals 20 + first ball of last frame" do
+            game = TenPin.new
+            [10, 10, 7, 2].each {|pins| game.roll(pins)}
+            game.frames[0].score.should == 27
+        end
+    end
+    context "score for a strike followed by two strikes" do
+        it "equals 30" do
+            game = TenPin.new
+            [10, 10, 10].each {|pins| game.roll(pins)}
+            game.frames[0].score.should == 30
         end
     end
 end
