@@ -76,15 +76,17 @@ class TenPin
 
     def ending
         tenth = @frames[9]
+        
         # if two balls have been rolled in the 10th frame and did not result in a strike or spare
         if tenth.balls[0] and tenth.balls[1] and tenth.balls.reduce(:+) < 10
             raise "The game is over"
         # if a strike was rolled in the 10th frame and two additional balls have been rolled
         elsif tenth.balls[0] == 10 and 
-            ((tenth.next.balls[0] and tenth.next.balls[1]) or (tenth.next.balls[0] == 10 and tenth.next.next.balls[0]))
+            ((tenth.next and tenth.next.balls[0] and tenth.next.balls[1]) or 
+            (tenth.next and tenth.next.next and tenth.next.balls[0] == 10 and tenth.next.next.balls[0]))
             raise "The game is over"
         # if a spare was rolled in the 10th frame and one additional ball has been rolled
-        elsif tenth.balls[0] and tenth.balls[1] and tenth.balls.reduce(:+) == 10 and tenth.next.balls[0]
+        elsif tenth.balls[0] and tenth.balls[1] and tenth.balls.reduce(:+) == 10 and tenth.next and tenth.next.balls[0]
             raise "The game is over"
         # otherwise, the game is still valid to play
         else

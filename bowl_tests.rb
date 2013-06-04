@@ -100,4 +100,44 @@ describe TenPin do
             game.frames[0].score.should == 30
         end
     end
+    context "non strike/spare in the 10th frame" do
+        it "should throw an error if we try to roll again" do
+            game = TenPin.new
+            20.times {|i| game.roll(4)}
+            game.frames.each {|frame| frame.balls.should == [4, 4]}
+            expect {game.roll(4)}.to raise_error("The game is over")
+        end
+    end
+    context "spare in the 10th frame" do
+        it "should allow one more ball and throw an error if a second is rolled" do
+            game = TenPin.new
+            19.times {|i| game.roll(4)}
+            game.roll(6) # spare in the 10th frame
+            game.roll(10) # extra ball
+            expect {game.roll(4)}.to raise_error("The game is over")
+        end
+    end
+    context "strike in the 10th frame followed by a non-strike" do
+        it "should allow one more frame (two balls) and then throw an error" do
+            game = TenPin.new
+            18.times {|i| game.roll(4)}
+            game.roll(10) # strike in the 10th frame
+            game.roll(8) # first extra ball
+            game.roll(1) # second extra ball
+            game.frames[10].balls.should == [8, 1]
+            game.frames.length.should == 11
+            expect {game.roll(4)}.to raise_error("The game is over")
+        end
+    end
+    context "strike in the 10th frame followed by a strike" do
+        it "should allow two more balls and then throw an error" do
+            game = TenPin.new
+            18.times {|i| game.roll(4)}
+            game.roll(10) # strike in the 10th frame
+            game.roll(10) # first extra ball
+            game.roll(10) # second extra ball
+            game.frames.length.should == 12
+            expect {game.roll(4)}.to raise_error("The game is over")
+        end
+    end
 end
