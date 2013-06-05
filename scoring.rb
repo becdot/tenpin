@@ -1,6 +1,8 @@
 
 
 class Frame
+    # TODO: overload indexing, on this or on Frame
+    # TODO: frame.is_spare and frame.is_strike
 
     attr_reader :balls
     attr_accessor :score, :next
@@ -9,8 +11,28 @@ class Frame
         @balls = Array.new(size=2)
     end
 
+    def [](index)
+        @balls[index]
+    end
+
+    def finished?
+        !(@balls[0].nil? or (@balls[1].nil? and @balls[0] < 10))
+    end
+    
+    def strike?
+        @balls[0] == 10
+    end
+
+    def spare?
+        self.finished? and !(self.strike?) and @balls.reduce(:+) == 10
+    end
+
+    def unclean?
+        self.finished? and !(self.strike?) and @balls.reduce(:+) < 10
+    end
+
     def roll(pins)
-        if (@balls[0] and @balls[1]) or (balls[0] and balls[0] + pins > 10)
+        if self.finished?
             raise "This frame is finished"
         elsif @balls[0]
             balls[1] = pins
@@ -20,30 +42,22 @@ class Frame
     end
 
     def score
-        total = if balls[1]
-                    balls.reduce(:+)
-                else
-                    balls[0]
-                end
-        if total < 10 # neither strike nor spare
+        total = if balls[1] then balls.reduce(:+) else balls[0] end
+        if self.unclean?
             return total
-        elsif @balls[0] < 10 # spare
-            if @next
-                return total + @next.balls[0]
-            end
+        elsif self.spare? and @next
+            return total + @next[0]
         else
-            if @next and @next.balls[0] < 10 # strike followed by a non-strike
+            if @next and @next.finished? and !(@next.strike?) # strike followed by a non-strike
                 return total + @next.balls.reduce(:+)
-            elsif @next and @next.next # strike followed by a strike
-                return total + @next.balls[0] + @next.next.balls[0]
+            elsif @next and @next.strike? and @next.next # strike followed by a strike followed by another frame
+                return total + @next[0] + @next.next[0]
             end
         end
     end
 end
 
 class TenPin
-    # overload indexing, on this or on Frame
-    # frame.is_spare and frame.is_strike
 
     attr_accessor :frames
 
@@ -53,14 +67,6 @@ class TenPin
     end
 
     def roll(pins)
-        # we know that there should be no more rolls when:
-        # => the 10th frame had two balls that resulted in neither a spare nor a strike
-        # => the 10th frame had a spare, and one ball was rolled in the 11th frame
-        # => the 10th frame had a strike, and either:
-        # => => two non-strike balls were rolled in the 11th frame
-        # => => one strike was rolled in the 11th frame and one additional ball was rolled in the 12th
-
-
         if frames.length >= 10
             self.ending
         end
@@ -76,17 +82,16 @@ class TenPin
 
     def ending
         tenth = @frames[9]
-        
         # if two balls have been rolled in the 10th frame and did not result in a strike or spare
-        if tenth.balls[0] and tenth.balls[1] and tenth.balls.reduce(:+) < 10
+        if tenth.unclean?
             raise "The game is over"
         # if a strike was rolled in the 10th frame and two additional balls have been rolled
-        elsif tenth.balls[0] == 10 and 
-            ((tenth.next and tenth.next.balls[0] and tenth.next.balls[1]) or 
-            (tenth.next and tenth.next.next and tenth.next.balls[0] == 10 and tenth.next.next.balls[0]))
+        elsif tenth.strike? and tenth.next and 
+            ((tenth.next.unclean? or tenth.next.spare?) or 
+            (tenth.next.strike? and tenth.next.next and tenth.next.next.strike?))
             raise "The game is over"
         # if a spare was rolled in the 10th frame and one additional ball has been rolled
-        elsif tenth.balls[0] and tenth.balls[1] and tenth.balls.reduce(:+) == 10 and tenth.next and tenth.next.balls[0]
+        elsif tenth.spare? and tenth.next and tenth.next.balls[0]
             raise "The game is over"
         # otherwise, the game is still valid to play
         else
