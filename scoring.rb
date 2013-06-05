@@ -15,43 +15,50 @@ class Frame
         @balls[index]
     end
 
+    def []=(index, value)
+        @balls[index] = value
+    end
+
+    def value
+        self.balls.compact.reduce(:+)
+    end
+
     def finished?
-        !(@balls[0].nil? or (@balls[1].nil? and @balls[0] < 10))
+        !(self[0].nil? or (self[1].nil? and self[0] < 10))
     end
     
     def strike?
-        @balls[0] == 10
+        self[0] == 10
     end
 
     def spare?
-        self.finished? and !(self.strike?) and @balls.reduce(:+) == 10
+        self.finished? and !(self.strike?) and self.value == 10
     end
 
     def unclean?
-        self.finished? and !(self.strike?) and @balls.reduce(:+) < 10
+        self.finished? and !(self.strike?) and self.value < 10
     end
 
     def roll(pins)
         if self.finished?
             raise "This frame is finished"
-        elsif @balls[0]
-            balls[1] = pins
+        elsif self[0]
+            self[1] = pins
         else
-            balls[0] = pins
+            self[0] = pins
         end
     end
 
     def score
-        total = if balls[1] then balls.reduce(:+) else balls[0] end
         if self.unclean?
-            return total
-        elsif self.spare? and @next
-            return total + @next[0]
+            return self.value
+        elsif self.spare? and self.next
+            return self.value + self.next[0]
         else
-            if @next and @next.finished? and !(@next.strike?) # strike followed by a non-strike
-                return total + @next.balls.reduce(:+)
-            elsif @next and @next.strike? and @next.next # strike followed by a strike followed by another frame
-                return total + @next[0] + @next.next[0]
+            if self.next and self.next.finished? and !(self.next.strike?) # strike followed by a non-strike
+                return self.value + self.next.balls.reduce(:+)
+            elsif self.next and self.next.strike? and self.next.next # strike followed by a strike followed by another frame
+                return self.value + self.next[0] + self.next.next[0]
             end
         end
     end
@@ -82,16 +89,17 @@ class TenPin
 
     def ending
         tenth = @frames[9]
+        eleventh = tenth.next
         # if two balls have been rolled in the 10th frame and did not result in a strike or spare
         if tenth.unclean?
             raise "The game is over"
         # if a strike was rolled in the 10th frame and two additional balls have been rolled
-        elsif tenth.strike? and tenth.next and 
-            ((tenth.next.unclean? or tenth.next.spare?) or 
-            (tenth.next.strike? and tenth.next.next and tenth.next.next.strike?))
+        elsif tenth.strike? and eleventh and 
+            ((eleventh.unclean? or eleventh.spare?) or 
+            (eleventh.strike? and eleventh.next and eleventh.next.strike?))
             raise "The game is over"
         # if a spare was rolled in the 10th frame and one additional ball has been rolled
-        elsif tenth.spare? and tenth.next and tenth.next.balls[0]
+        elsif tenth.spare? and eleventh and eleventh[0]
             raise "The game is over"
         # otherwise, the game is still valid to play
         else
