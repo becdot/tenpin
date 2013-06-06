@@ -1,8 +1,7 @@
 
 
 class Frame
-    # TODO: overload indexing, on this or on Frame
-    # TODO: frame.is_spare and frame.is_strike
+    # TODO: scoring on every frame
 
     attr_reader :balls
     attr_accessor :score, :next
@@ -75,7 +74,7 @@ class TenPin
 
     def roll(pins)
         if frames.length >= 10
-            self.ending
+            self.done?
         end
         begin
             @current_frame.roll(pins)
@@ -87,7 +86,7 @@ class TenPin
         end
     end
 
-    def ending
+    def done?
         tenth = @frames[9]
         eleventh = tenth.next
         # if two balls have been rolled in the 10th frame and did not result in a strike or spare
@@ -104,6 +103,16 @@ class TenPin
         # otherwise, the game is still valid to play
         else
             return nil
+        end
+    end
+
+    def score
+        self.frames.inject(0) do |sum, frame|
+            unless frame.score.nil?
+                sum += frame.score
+            else
+                sum += 0
+            end
         end
     end
 
